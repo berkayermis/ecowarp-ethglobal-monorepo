@@ -14,13 +14,20 @@ error EcoWarpMarketplace__SameListingFee();
 error EcoWarpMarketplace__InvalidListingFee();
 error EcoWarpMarketplace__FailedInnerCall();
 error EcoWarpMarketplace__InsufficientBalance();
+error EcoWarpMarketplace__InvalidSaleFee();
+error EcoWarpMarketplace__InvalidTokenId();
+error EcoWarpMarketplace__InsufficientSupply();
+error EcoWarpMarketplace__IncorrectPaymentAmount();
 
 contract EcoWarpMarketplace is
     Initializable,
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
+    uint256 private constant DENOMINATOR = 10000;
+
     struct ItemInfo {
+        address creator;
         string name;
         string description;
         string uri;
@@ -33,6 +40,7 @@ contract EcoWarpMarketplace is
         uint256 _tokenId;
         mapping(uint256 => ItemInfo) _itemInfo;
         uint256 _itemListingFee;
+        uint256 _saleFee; // in basis points
     }
 
     // keccak256(abi.encode(uint256(keccak256("ecowarp.storage.marketplace")) - 1)) & ~bytes32(uint256(0xff))
@@ -51,10 +59,12 @@ contract EcoWarpMarketplace is
 
     function initialize(
         uint256 itemListingFee_,
+        uint256 saleFee_,
         address defaultAdmin
     ) public initializer {
         EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
         $._itemListingFee = itemListingFee_;
+        $._saleFee = saleFee_;
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
     }
 
@@ -65,6 +75,13 @@ contract EcoWarpMarketplace is
         if ($._itemListingFee == itemListingFee)
             revert EcoWarpMarketplace__SameListingFee();
         $._itemListingFee = itemListingFee;
+    }
+
+    function setSaleFee(uint256 saleFee) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        if ($._saleFee == saleFee || saleFee > DENOMINATOR)
+            revert EcoWarpMarketplace__InvalidSaleFee();
+        $._saleFee = saleFee;
     }
 
     function createItem(
@@ -84,8 +101,9 @@ contract EcoWarpMarketplace is
         if (bytes(uri_).length == 0) revert EcoWarpMarketplace__InvalidURI();
         if (supply_ == 0) revert EcoWarpMarketplace__InvalidSupply();
 
-        uint256 tokenId = _incrementAndGetTokenId();
+        uint256 tokenId = _getAndIncrementTokenId();
         $._itemInfo[tokenId] = ItemInfo({
+            creator: msg.sender,
             name: name_,
             description: description_,
             uri: uri_,
@@ -96,6 +114,31 @@ contract EcoWarpMarketplace is
         $._ecoWarpNFT.mint(address(this), tokenId, supply_, uri_);
     }
 
+    function buyItem(uint256 tokenId_, uint256 amount_) external payable {
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        if (tokenId_ >= $._tokenId) revert EcoWarpMarketplace__InvalidTokenId();
+
+        ItemInfo storage item = $._itemInfo[tokenId_];
+        if (item.supply < amount_)
+            revert EcoWarpMarketplace__InsufficientSupply();
+        if (msg.value != item.price * amount_)
+            revert EcoWarpMarketplace__IncorrectPaymentAmount();
+
+        item.supply = item.supply - amount_;
+
+        uint256 sellerAmount = (msg.value * (DENOMINATOR - $._saleFee)) /
+            DENOMINATOR;
+        _sendValue(item.creator, sellerAmount);
+
+        $._ecoWarpNFT.safeTransferFrom(
+            address(this),
+            msg.sender,
+            tokenId_,
+            amount_,
+            ""
+        );
+    }
+
     function withdraw(
         address recipient_,
         uint256 amount_
@@ -104,15 +147,19 @@ contract EcoWarpMarketplace is
             revert EcoWarpMarketplace__InsufficientBalance();
         }
 
-        (bool success, ) = recipient_.call{value: amount_}("");
+        _sendValue(recipient_, amount_);
+    }
+
+    function _sendValue(address recipient_, uint256 amount_) private {
+        (bool success, ) = payable(recipient_).call{value: amount_}("");
         if (!success) {
             revert EcoWarpMarketplace__FailedInnerCall();
         }
     }
 
-    function _incrementAndGetTokenId() internal returns (uint256) {
+    function _getAndIncrementTokenId() internal returns (uint256) {
         unchecked {
-            return _getEcoWarpMarketplaceStorage()._tokenId++;
+            return ++_getEcoWarpMarketplaceStorage()._tokenId;
         }
     }
 

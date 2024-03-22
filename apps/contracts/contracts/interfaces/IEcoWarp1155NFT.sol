@@ -8,4 +8,12 @@ interface IEcoWarp1155NFT {
         uint256 amount_,
         string memory uri_
     ) external;
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    ) external;
 }
