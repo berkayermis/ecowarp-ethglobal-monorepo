@@ -10,6 +10,10 @@ error EcoWarpMarketplace__InvalidSupply();
 error EcoWarpMarketplace__InvalidName();
 error EcoWarpMarketplace__InvalidDescription();
 error EcoWarpMarketplace__InvalidURI();
+error EcoWarpMarketplace__SameListingFee();
+error EcoWarpMarketplace__InvalidListingFee();
+error EcoWarpMarketplace__FailedInnerCall();
+error EcoWarpMarketplace__InsufficientBalance();
 
 contract EcoWarpMarketplace is
     Initializable,
@@ -28,6 +32,7 @@ contract EcoWarpMarketplace is
         IEcoWarp1155NFT _ecoWarpNFT;
         uint256 _tokenId;
         mapping(uint256 => ItemInfo) _itemInfo;
+        uint256 _itemListingFee;
     }
 
     // keccak256(abi.encode(uint256(keccak256("ecowarp.storage.marketplace")) - 1)) & ~bytes32(uint256(0xff))
@@ -44,8 +49,22 @@ contract EcoWarpMarketplace is
         }
     }
 
-    function initialize(address defaultAdmin) public initializer {
+    function initialize(
+        uint256 itemListingFee_,
+        address defaultAdmin
+    ) public initializer {
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        $._itemListingFee = itemListingFee_;
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+    }
+
+    function setItemListingFee(
+        uint256 itemListingFee
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        if ($._itemListingFee == itemListingFee)
+            revert EcoWarpMarketplace__SameListingFee();
+        $._itemListingFee = itemListingFee;
     }
 
     function createItem(
@@ -54,7 +73,11 @@ contract EcoWarpMarketplace is
         string memory uri_,
         uint256 price_,
         uint256 supply_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        if (msg.value != $._itemListingFee)
+            revert EcoWarpMarketplace__InvalidListingFee();
+
         if (bytes(name_).length == 0) revert EcoWarpMarketplace__InvalidName();
         if (bytes(description_).length == 0)
             revert EcoWarpMarketplace__InvalidDescription();
@@ -62,8 +85,6 @@ contract EcoWarpMarketplace is
         if (supply_ == 0) revert EcoWarpMarketplace__InvalidSupply();
 
         uint256 tokenId = _incrementAndGetTokenId();
-        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
-
         $._itemInfo[tokenId] = ItemInfo({
             name: name_,
             description: description_,
@@ -73,6 +94,20 @@ contract EcoWarpMarketplace is
         });
 
         $._ecoWarpNFT.mint(address(this), tokenId, supply_, uri_);
+    }
+
+    function withdraw(
+        address recipient_,
+        uint256 amount_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(this).balance < amount_) {
+            revert EcoWarpMarketplace__InsufficientBalance();
+        }
+
+        (bool success, ) = recipient_.call{value: amount_}("");
+        if (!success) {
+            revert EcoWarpMarketplace__FailedInnerCall();
+        }
     }
 
     function _incrementAndGetTokenId() internal returns (uint256) {
