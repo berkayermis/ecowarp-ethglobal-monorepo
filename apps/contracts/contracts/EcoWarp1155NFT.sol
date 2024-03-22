@@ -89,7 +89,11 @@ contract EcoWarp1155NFT is
         address to,
         uint256[] memory ids,
         uint256[] memory values
-    ) internal override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+    )
+        internal
+        override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
+        onlyRole(MARKETPLACE_ROLE)
+    {
         super._update(from, to, ids, values);
     }
 
