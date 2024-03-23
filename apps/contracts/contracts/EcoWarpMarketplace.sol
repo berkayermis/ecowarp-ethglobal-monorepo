@@ -189,7 +189,7 @@ contract EcoWarpMarketplace is
 
     function _getAndIncrementTokenId() internal returns (uint256) {
         unchecked {
-            return ++_getEcoWarpMarketplaceStorage()._tokenId;
+            return _getEcoWarpMarketplaceStorage()._tokenId++;
         }
     }
 
