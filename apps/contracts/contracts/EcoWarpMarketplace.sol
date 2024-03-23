@@ -86,28 +86,30 @@ contract EcoWarpMarketplace is
     }
 
     function setEcoWarpNFT(
-        IEcoWarp1155NFT ecoWarpNFT
+        IEcoWarp1155NFT ecoWarpNFT_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (address(ecoWarpNFT) == address(0))
+        if (address(ecoWarpNFT_) == address(0))
             revert EcoWarpMarketplace__ZeroAddress();
         EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
-        $._ecoWarpNFT = ecoWarpNFT;
+        $._ecoWarpNFT = ecoWarpNFT_;
     }
 
     function setItemListingFee(
-        uint256 itemListingFee
+        uint256 itemListingFee_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
-        if ($._itemListingFee == itemListingFee)
+        if ($._itemListingFee == itemListingFee_)
             revert EcoWarpMarketplace__SameListingFee();
-        $._itemListingFee = itemListingFee;
+        $._itemListingFee = itemListingFee_;
     }
 
-    function setSaleFee(uint256 saleFee) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setSaleFee(
+        uint256 saleFee_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
-        if ($._saleFee == saleFee || saleFee > DENOMINATOR)
+        if ($._saleFee == saleFee_ || saleFee_ > DENOMINATOR)
             revert EcoWarpMarketplace__InvalidSaleFee();
-        $._saleFee = saleFee;
+        $._saleFee = saleFee_;
     }
 
     function createListing(
