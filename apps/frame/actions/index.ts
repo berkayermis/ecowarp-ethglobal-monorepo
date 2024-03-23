@@ -227,7 +227,16 @@ export async function validateCode(code: Json, wallet_address: Address) {
 
 export async function pinToIPFS(
   formData: FormData,
-  metadata: Json,
+  metadata: {
+    name: string;
+    description: string;
+    unitPrice: string;
+    supply: string;
+    category: string;
+    image: Array<{
+      hash: string;
+    }>;
+  },
   code: string,
   wallet_address: Address
 ) {
@@ -280,8 +289,11 @@ export async function pinToIPFS(
     if (hashes.length > 0) {
       const refactoredMetadata = {
         ...(metadata as { [key: string]: any }),
+        name: metadata?.name.replace(/&#39;/g, "'"),
+        description: metadata.description.replace(/&#39;/g, "'"),
         image: hashes,
       };
+
       const metadataFile = new Blob([JSON.stringify(refactoredMetadata)], {
         type: "application/json",
       });
@@ -347,6 +359,54 @@ export async function pinToIPFS(
     console.error(e);
     return {
       ok: false,
+    };
+  } finally {
+    if (pgClient) {
+      try {
+        await pgClient.end();
+      } catch (err) {
+        console.error("Error closing client connection:", err);
+      }
+    }
+  }
+}
+
+export async function fetchIPFSHash(wallet_address: Address) {
+  if (!wallet_address || wallet_address === zeroAddress) {
+    throw new Error("Invalid wallet address");
+  }
+
+  const pgClient = await supabaseClient();
+  if (!pgClient) {
+    throw new Error("Error creating pg client");
+  }
+
+  try {
+    await pgClient.connect();
+
+    const res = await pgClient.query(
+      "SELECT cdn_hash FROM profiles WHERE wallet_address = $1",
+      [wallet_address]
+    );
+
+    if (res.rows.length === 0) {
+      return {
+        ok: false,
+        hash: null,
+      };
+    }
+
+    const hash = res.rows[0]?.cdn_hash.ipfsHash;
+
+    return {
+      ok: true,
+      hash,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      ok: false,
+      hash: null,
     };
   } finally {
     if (pgClient) {

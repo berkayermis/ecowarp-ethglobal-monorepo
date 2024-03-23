@@ -4,6 +4,7 @@ export const PINATA_USER_BY_ID_API_URL =
   "https://api.pinata.cloud/v3/farcaster/users/";
 export const PINATA_PINNING_API_URL =
   "https://api.pinata.cloud/pinning/pinFileToIPFS";
+export const IPFS_GATEWAY = "https://cloudflare-ipfs.com/ipfs/";
 
 export type Json =
   | string

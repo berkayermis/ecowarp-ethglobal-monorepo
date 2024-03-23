@@ -5,11 +5,16 @@ import { handle } from "frog/next";
 import { devtools } from "frog/dev";
 import { pinata } from "frog/hubs";
 import { serveStatic } from "frog/serve-static";
-import { get_and_encode_wallet_address, sign_up, cdn_req } from "@/actions";
+import {
+  get_and_encode_wallet_address,
+  sign_up,
+  cdn_req,
+  fetchIPFSHash,
+} from "@/actions";
 import { Address, parseEther, zeroAddress } from "viem";
 import { extractParamsFromUrl, NumberFormatter } from "@/utils/formatter";
 import { generateSecureRandomString } from "@/utils/random";
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/constant";
+import { CONTRACT_ABI, CONTRACT_ADDRESS, IPFS_GATEWAY } from "@/constant";
 
 type UserType = "Seller" | "Buyer" | undefined;
 
@@ -217,7 +222,7 @@ app.frame("/seller", async (c) => {
       ) : buttonValue === "continue" ? (
         <TextInput placeholder="Product Description" />
       ) : buttonValue === "continue_2" ? (
-        <TextInput placeholder="Unit Price" />
+        <TextInput placeholder="Unit Price (in terms of ETH)" />
       ) : buttonValue === "continue_3" ? (
         <TextInput placeholder="Supply" />
       ) : buttonValue === "continue_4" ? (
@@ -245,7 +250,7 @@ app.frame("/seller", async (c) => {
         </Button>
       ) : (
         <Button.Redirect
-          location={`/?code=${state.code}&wallet_address=${state.address}&name=${state.product.name}&description=${state.product.description}&unitPrice=${state.product.unitPrice}&supply=${state.product.supply}&category=${state.product.category}`}
+          location={`/?code=${state.code}&wallet_address=${state.address}&name=${encodeURIComponent(state.product.name)}&description=${encodeURIComponent(state.product.description)}&unitPrice=${encodeURIComponent(state.product.unitPrice)}&supply=${state.product.supply}&category=${state.product.category}`}
         >
           {"Upload Image 🛍️"}
         </Button.Redirect>
@@ -257,17 +262,28 @@ app.frame("/seller", async (c) => {
   });
 });
 
-app.transaction("/mint", (c) => {
-  const { previousState } = c;
+app.transaction("/mint", async (c) => {
+  const { previousState, address } = c;
   const product = previousState.product;
+
+  const { ok, hash } = await fetchIPFSHash(address as Address);
+
+  if (!ok) {
+    throw new Error("IPFS hash not found");
+  }
 
   return c.contract({
     abi: CONTRACT_ABI,
     chainId: "eip155:8453",
     functionName: "createListing",
     to: CONTRACT_ADDRESS,
-    args: [product.description, product.description, product.unitPrice],
-    value: parseEther(product.unitPrice),
+    args: [
+      product.description,
+      IPFS_GATEWAY + hash,
+      product.unitPrice,
+      product.supply,
+    ],
+    value: parseEther("0.00001"), // @todo
   });
 });
 
