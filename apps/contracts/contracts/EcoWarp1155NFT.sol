@@ -45,14 +45,10 @@ contract EcoWarp1155NFT is
         _disableInitializers();
     }
 
-    function initialize(
-        address defaultAdmin,
-        address ecoWarpMarketplace
-    ) public initializer {
+    function initialize(address defaultAdmin) public initializer {
         __ERC1155_init("");
 
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
-        _grantRole(MARKETPLACE_ROLE, ecoWarpMarketplace);
     }
 
     function uri(uint256 id) public view override returns (string memory) {
