@@ -1,31 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
+import {IEcoWarpMarketplaceErrors} from "./interfaces/errors/IEcoWarpMarketplaceErrors.sol";
 import {IEcoWarp1155NFT} from "./interfaces/IEcoWarp1155NFT.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-error EcoWarpMarketplace__ZeroAddress();
-error EcoWarpMarketplace__InvalidSupply();
-error EcoWarpMarketplace__InvalidName();
-error EcoWarpMarketplace__InvalidDescription();
-error EcoWarpMarketplace__InvalidURI();
-error EcoWarpMarketplace__SameListingFee();
-error EcoWarpMarketplace__InvalidListingFee();
-error EcoWarpMarketplace__FailedInnerCall();
-error EcoWarpMarketplace__InsufficientBalance();
-error EcoWarpMarketplace__InvalidSaleFee();
-error EcoWarpMarketplace__InvalidTokenId();
-error EcoWarpMarketplace__InsufficientSupply();
-error EcoWarpMarketplace__IncorrectPaymentAmount();
-
 contract EcoWarpMarketplace is
     Initializable,
     IERC1155Receiver,
     AccessControlUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IEcoWarpMarketplaceErrors
 {
     uint256 private constant DENOMINATOR = 10000;
 

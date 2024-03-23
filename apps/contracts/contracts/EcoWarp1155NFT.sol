@@ -1,23 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
+import {IEcoWarp1155NFTErrors} from "./interfaces/errors/IEcoWarp1155NFTErrors.sol";
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ERC1155SupplyUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-error EcoWarp1155NFT__ZeroAddress();
-error EcoWarp1155NFT__InvalidAmount();
-error EcoWarp1155NFT__InvalidURI();
-error EcoWarp1155NFT__InvalidTokenId();
-
 contract EcoWarp1155NFT is
     Initializable,
     ERC1155Upgradeable,
     AccessControlUpgradeable,
     ERC1155SupplyUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IEcoWarp1155NFTErrors
 {
     bytes32 public constant MARKETPLACE_ROLE =
         0x0ea61da3a8a09ad801432653699f8c1860b1ae9d2ea4a141fadfd63227717bc8;
