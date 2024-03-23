@@ -118,7 +118,7 @@ contract EcoWarpMarketplace is
         string memory uri_,
         uint256 price_,
         uint256 supply_
-    ) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external payable {
         EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
         if (msg.value != $._itemListingFee)
             revert EcoWarpMarketplace__InvalidListingFee();
