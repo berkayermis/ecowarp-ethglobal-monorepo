@@ -55,11 +55,22 @@ describe("EcoWarpMarketplace", function () {
     const uri = "ipfs://test";
     const price = parseEther("1");
     const supply = 10;
+
+    let beforeContractBalance = await ethers.provider.getBalance(
+      ecoWarpMarketplace.target
+    );
     await ecoWarpMarketplace
       .connect(bob)
       .createListing(name, description, uri, price, supply, {
         value: itemListingFee,
       });
+    let afterContractBalance = await ethers.provider.getBalance(
+      ecoWarpMarketplace.target
+    );
+
+    expect(afterContractBalance).to.equal(
+      beforeContractBalance + itemListingFee
+    );
 
     const bobAddress = bob.address;
     expect(await ecoWarpMarketplace.itemInfo(0)).to.deep.equal([
@@ -72,9 +83,24 @@ describe("EcoWarpMarketplace", function () {
       0,
     ]);
 
+    beforeContractBalance = await ethers.provider.getBalance(
+      ecoWarpMarketplace.target
+    );
+    const beforeSellerBalance = await ethers.provider.getBalance(bobAddress);
     await ecoWarpMarketplace
       .connect(alice)
       .buyItem(0, 5, { value: price * 5n });
+    afterContractBalance = await ethers.provider.getBalance(
+      ecoWarpMarketplace.target
+    );
+    const afterSellerBalance = await ethers.provider.getBalance(bobAddress);
+
+    expect(afterContractBalance).to.equal(
+      beforeContractBalance + (price * 5n * BigInt(saleFee)) / 10000n
+    );
+    expect(afterSellerBalance).to.equal(
+      beforeSellerBalance + price * 5n - (price * 5n * BigInt(saleFee)) / 10000n
+    );
 
     expect(await ecoWarpNFT.balanceOf(alice.address, 0)).to.equal(5);
     expect(await ecoWarpMarketplace.itemInfo(0)).to.deep.equal([
