@@ -36,6 +36,7 @@ contract EcoWarpMarketplace is
         string uri;
         uint256 price;
         uint256 supply;
+        uint256 sold;
     }
 
     struct EcoWarpMarketplaceStorage {
@@ -138,7 +139,8 @@ contract EcoWarpMarketplace is
             description: description_,
             uri: uri_,
             price: price_,
-            supply: supply_
+            supply: supply_,
+            sold: 0
         });
 
         $._ecoWarpNFT.mint(address(this), tokenId, supply_, uri_);
@@ -155,6 +157,7 @@ contract EcoWarpMarketplace is
             revert EcoWarpMarketplace__IncorrectPaymentAmount();
 
         item.supply = item.supply - amount_;
+        item.sold = item.sold + amount_;
 
         uint256 sellerAmount = (msg.value * (DENOMINATOR - $._saleFee)) /
             DENOMINATOR;
