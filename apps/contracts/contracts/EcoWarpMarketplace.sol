@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {IEcoWarp1155NFT} from "./interfaces/IEcoWarp1155NFT.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -22,6 +23,7 @@ error EcoWarpMarketplace__IncorrectPaymentAmount();
 
 contract EcoWarpMarketplace is
     Initializable,
+    IERC1155Receiver,
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
@@ -194,4 +196,24 @@ contract EcoWarpMarketplace is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
 }
