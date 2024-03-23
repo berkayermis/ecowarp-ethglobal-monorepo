@@ -58,6 +58,22 @@ contract EcoWarpMarketplace is
         }
     }
 
+    function ecoWarpNFT() external view returns (IEcoWarp1155NFT) {
+        return _getEcoWarpMarketplaceStorage()._ecoWarpNFT;
+    }
+
+    function itemInfo(uint256 tokenId) external view returns (ItemInfo memory) {
+        return _getEcoWarpMarketplaceStorage()._itemInfo[tokenId];
+    }
+
+    function itemListingFee() external view returns (uint256) {
+        return _getEcoWarpMarketplaceStorage()._itemListingFee;
+    }
+
+    function saleFee() external view returns (uint256) {
+        return _getEcoWarpMarketplaceStorage()._saleFee;
+    }
+
     function initialize(
         uint256 itemListingFee_,
         uint256 saleFee_,
