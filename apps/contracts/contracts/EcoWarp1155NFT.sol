@@ -66,10 +66,9 @@ contract EcoWarp1155NFT is
         if (account_ == address(0)) revert EcoWarp1155NFT__ZeroAddress();
         if (amount_ == 0) revert EcoWarp1155NFT__InvalidAmount();
 
-        if (bytes($._tokenURIs[id_]).length == 0)
-            revert EcoWarp1155NFT__InvalidURI();
+        if (bytes(uri_).length == 0) revert EcoWarp1155NFT__InvalidURI();
 
-        if (bytes($._tokenURIs[id_]).length > 0)
+        if (bytes($._tokenURIs[id_]).length != 0)
             revert EcoWarp1155NFT__InvalidTokenId();
 
         $._tokenURIs[id_] = uri_;
