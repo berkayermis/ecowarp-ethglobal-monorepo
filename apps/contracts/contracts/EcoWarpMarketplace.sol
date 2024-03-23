@@ -6,6 +6,7 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+error EcoWarpMarketplace__ZeroAddress();
 error EcoWarpMarketplace__InvalidSupply();
 error EcoWarpMarketplace__InvalidName();
 error EcoWarpMarketplace__InvalidDescription();
@@ -68,6 +69,15 @@ contract EcoWarpMarketplace is
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
     }
 
+    function setEcoWarpNFT(
+        IEcoWarp1155NFT ecoWarpNFT
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(ecoWarpNFT) == address(0))
+            revert EcoWarpMarketplace__ZeroAddress();
+        EcoWarpMarketplaceStorage storage $ = _getEcoWarpMarketplaceStorage();
+        $._ecoWarpNFT = ecoWarpNFT;
+    }
+
     function setItemListingFee(
         uint256 itemListingFee
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -84,7 +94,7 @@ contract EcoWarpMarketplace is
         $._saleFee = saleFee;
     }
 
-    function createItem(
+    function createListing(
         string memory name_,
         string memory description_,
         string memory uri_,
