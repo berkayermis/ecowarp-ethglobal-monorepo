@@ -35,6 +35,22 @@ contract EcoWarpMarketplace is
         uint256 _saleFee; // in basis points
     }
 
+    event ItemListed(
+        uint256 indexed tokenId,
+        address indexed creator,
+        string name,
+        string description,
+        string uri,
+        uint256 price,
+        uint256 supply
+    );
+
+    event ItemSold(
+        uint256 indexed tokenId,
+        address indexed buyer,
+        uint256 amount
+    );
+
     // keccak256(abi.encode(uint256(keccak256("ecowarp.storage.marketplace")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant EcoWarpMarketplaceStorageLocation =
         0xabe61afda60696eaa5ad712ca9f31e4eaf93c33f603381db92c373464e81da00;
@@ -132,6 +148,15 @@ contract EcoWarpMarketplace is
         });
 
         $._ecoWarpNFT.mint(address(this), tokenId, supply_, uri_);
+        emit ItemListed(
+            tokenId,
+            msg.sender,
+            name_,
+            description_,
+            uri_,
+            price_,
+            supply_
+        );
     }
 
     function buyItem(uint256 tokenId_, uint256 amount_) external payable {
@@ -158,6 +183,7 @@ contract EcoWarpMarketplace is
             amount_,
             ""
         );
+        emit ItemSold(tokenId_, msg.sender, amount_);
     }
 
     function withdraw(
