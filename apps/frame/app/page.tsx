@@ -5,9 +5,14 @@ import type { Metadata } from "next";
 import { Address } from "viem";
 import Image from "next/image";
 import Upload from "@/components/Upload";
+import dynamic from "next/dynamic";
+
+const UploadComponentWithNoSSR = dynamic(() => import("@/components/Upload"), {
+  ssr: false,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
-  const url = "http://localhost:3000";
+  const url = "https://ecowarp.store";
   const frameMetadata = await getFrameMetadata(`${url}/api`);
   return {
     other: frameMetadata,
@@ -50,7 +55,7 @@ export default async function Page({
         </div>
         <span className={styles.logoTest}>EcoWarp</span>
       </div>
-      <Upload
+      <UploadComponentWithNoSSR
         name={searchParams.name}
         description={searchParams.description}
         unitPrice={searchParams.unitPrice}

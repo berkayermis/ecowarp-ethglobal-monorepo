@@ -28,7 +28,6 @@ const Upload = ({
   const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(
     null
   );
-  const [loading, setLoading] = React.useState(false);
 
   useEffect(() => {
     // Generate preview URL for the first file if files are selected
@@ -54,7 +53,6 @@ const Upload = ({
 
   const handleAction = async (formData: FormData) => {
     if (!file) return;
-    setLoading(true);
     const { ok } = await pinToIPFS(formData, metadata, code, wallet_address);
 
     if (ok) {
@@ -62,7 +60,6 @@ const Upload = ({
     } else {
       setSuccess(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -91,7 +88,7 @@ const Upload = ({
           accept="image/*"
         />
         <Button className={styles.button} variant="outline" type="submit">
-          {loading ? "Uploading..." : "Upload"}
+          Upload
         </Button>
         {success && (
           <div className={styles.container}>
