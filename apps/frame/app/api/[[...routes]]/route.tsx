@@ -16,6 +16,7 @@ import { Address, formatEther, parseEther, zeroAddress } from "viem";
 import { extractParamsFromUrl, NumberFormatter } from "@/utils/formatter";
 import { generateSecureRandomString } from "@/utils/random";
 import {
+  CHAIN_ID,
   CONSTANT_ETH_USD_PRICE,
   CONTRACT_ABI,
   CONTRACT_ADDRESS,
@@ -246,7 +247,7 @@ app.transaction("/mint", async (c) => {
 
   return c.contract({
     abi: CONTRACT_ABI,
-    chainId: "eip155:8453",
+    chainId: `eip155:${CHAIN_ID}`,
     functionName: "createListing",
     to: CONTRACT_ADDRESS,
     args: [
@@ -383,7 +384,7 @@ app.transaction("/purchase/:tokenId/:price", async (c) => {
 
   return c.contract({
     abi: CONTRACT_ABI,
-    chainId: "eip155:8453",
+    chainId: `eip155:${CHAIN_ID}`,
     functionName: "buyItem",
     to: CONTRACT_ADDRESS,
     args: [tokenId, 1],
