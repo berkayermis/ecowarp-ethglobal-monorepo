@@ -57,7 +57,6 @@ const app = new Frog<{ State: State }>({
   assetsPath: "/",
   basePath: "/api",
   hub: pinata(),
-  verify: "silent",
   browserLocation: "/:path",
   //secret: process.env.FROG_SECRET, // @todo
   initialState: {
