@@ -1,13 +1,16 @@
+import { CONSTANT_ETH_USD_PRICE } from "@/constant";
 import { Address } from "viem";
 
 export function NumberFormatter({
   value,
   decimalScale,
   thousandSeparator,
+  convertToUSD,
 }: {
   value: number;
   decimalScale: number;
   thousandSeparator: boolean;
+  convertToUSD?: boolean;
 }) {
   const formatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimalScale,
@@ -15,7 +18,11 @@ export function NumberFormatter({
     useGrouping: thousandSeparator,
   });
 
-  return formatter.format(value);
+  console.log("convertToUSD", parseFloat(formatter.format(value)) * 4000);
+
+  return convertToUSD
+    ? `$${parseFloat(formatter.format(value)) * CONSTANT_ETH_USD_PRICE}`
+    : formatter.format(value);
 }
 
 export const extractParamsFromUrl = async (
