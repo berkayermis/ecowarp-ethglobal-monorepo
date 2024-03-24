@@ -27,8 +27,11 @@ type UserType = "Seller" | "Buyer" | undefined;
 
 type ProductType = {
   name: string;
+  encodedName: string;
   description: string;
+  encodedDescription: string;
   price: string;
+  encodedPrice: string;
   supply: string;
   category: string;
 };
@@ -72,8 +75,11 @@ const app = new Frog<{ State: State }>({
     currentImage: "",
     product: {
       name: "",
+      encodedName: "",
       description: "",
+      encodedDescription: "",
       price: "",
+      encodedPrice: "",
       supply: "",
       category: "",
     },
@@ -148,14 +154,17 @@ app.frame("/seller", async (c) => {
   } else if (buttonValue === "continue" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
       previousState.product.name = inputText;
+      previousState.product.encodedName = encodeURIComponent(inputText);
     });
   } else if (buttonValue === "continue_2" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
       previousState.product.description = inputText;
+      previousState.product.encodedDescription = encodeURIComponent(inputText);
     });
   } else if (buttonValue === "continue_3" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
       previousState.product.price = inputText;
+      previousState.product.encodedPrice = encodeURIComponent(inputText);
     });
   } else if (buttonValue === "continue_4" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
@@ -236,7 +245,7 @@ app.frame("/seller", async (c) => {
         </Button>
       ) : (
         <Button.Redirect
-          location={`/?code=${state.code}&wallet_address=${state.address}&name=${encodeURIComponent(state.product.name)}&description=${encodeURIComponent(state.product.description)}&unitPrice=${encodeURIComponent(state.product.price)}&supply=${state.product.supply}&category=${state.product.category}`}
+          location={`/?code=${state.code}&wallet_address=${state.address}&name=${encodeURIComponent(state.product.encodedName)}&description=${encodeURIComponent(state.product.encodedDescription)}&unitPrice=${encodeURIComponent(state.product.encodedPrice)}&supply=${state.product.supply}&category=${state.product.category}`}
         >
           {"Upload Image 🛍️"}
         </Button.Redirect>
