@@ -6,6 +6,16 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", ".vercel/**"]
     },
+    "frame#build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "PINATA_API_KEY",
+        "PINATA_API_SECRET",
+        "PINATA_API_JWT",
+        "SUPABASE_CONNECTION_STRING"
+      ],
+      "outputs": ["frame/.next/**", "!.next/cache/**", "frame/.vercel/**"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
