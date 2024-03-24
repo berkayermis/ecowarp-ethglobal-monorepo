@@ -11,14 +11,15 @@ async function createListing() {
     "" // Address of the deployed contract
   )) as EcoWarpMarketplace;
 
-  const name = "Test Item";
+  const name = "Test Item 1";
   const description = "Test Item Description";
-  const uri = "ipfs://test";
+  const category = "Test Category";
+  const uri = "ipfs://QmR52X4u7Xy6gEe4mSPpCeGxU9drqo4QbB2eSZRVvmi7to";
   const price = parseEther("0.00001");
   const supply = 10;
   await ecoWarpMarketplace
     .connect(deployer)
-    .createListing(name, description, uri, price, supply, {
+    .createListing(name, description, category, uri, price, supply, {
       value: itemListingFee,
     });
 }

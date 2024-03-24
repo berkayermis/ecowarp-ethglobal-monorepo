@@ -21,6 +21,7 @@ contract EcoWarpMarketplace is
         address creator;
         string name;
         string description;
+        string category;
         string uri;
         uint256 price;
         uint256 supply;
@@ -40,6 +41,7 @@ contract EcoWarpMarketplace is
         address indexed creator,
         string name,
         string description,
+        string category,
         string uri,
         uint256 price,
         uint256 supply
@@ -122,6 +124,7 @@ contract EcoWarpMarketplace is
     function createListing(
         string memory name_,
         string memory description_,
+        string memory category_,
         string memory uri_,
         uint256 price_,
         uint256 supply_
@@ -141,6 +144,7 @@ contract EcoWarpMarketplace is
             creator: msg.sender,
             name: name_,
             description: description_,
+            category: category_,
             uri: uri_,
             price: price_,
             supply: supply_,
@@ -153,6 +157,7 @@ contract EcoWarpMarketplace is
             msg.sender,
             name_,
             description_,
+            category_,
             uri_,
             price_,
             supply_

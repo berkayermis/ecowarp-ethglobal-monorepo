@@ -32,7 +32,6 @@ async function deploy() {
     .grantRole(await ecoWarpNFT.MARKETPLACE_ROLE(), ecoWarpMarketplace.target);
   await grantRoleTx.wait();
 }
-/*
 
 deploy()
   .then(() => process.exit(0))
