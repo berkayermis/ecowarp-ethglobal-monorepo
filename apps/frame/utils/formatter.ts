@@ -18,8 +18,6 @@ export function NumberFormatter({
     useGrouping: thousandSeparator,
   });
 
-  console.log("convertToUSD", parseFloat(formatter.format(value)) * 4000);
-
   return convertToUSD
     ? `$${parseFloat(formatter.format(value)) * CONSTANT_ETH_USD_PRICE}`
     : formatter.format(value);

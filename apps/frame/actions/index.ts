@@ -504,8 +504,6 @@ async function fetchAppropriateProducts(category: string) {
       variables: { category },
     });
 
-    console.log("Response:", res);
-
     const products = res.data.itemListeds;
 
     if (products.length === 0) {
@@ -534,7 +532,6 @@ async function predictUserBehaviour(casts: Array<string>) {
     const castsCleaned = casts.map((cast) =>
       cast.replace(/(\r\n|\n|\r)/gm, "")
     );
-    console.log("Casts cleaned:", castsCleaned);
 
     const predictRes = await fetch(RAILWAY_ML_PREDICTION_API_URL, {
       method: "POST",
@@ -543,8 +540,6 @@ async function predictUserBehaviour(casts: Array<string>) {
       },
       body: JSON.stringify({ casts: castsCleaned }),
     }).then((res) => res.json());
-
-    console.log("Prediction response:", predictRes);
 
     if (predictRes.statusCode !== 200) {
       throw new Error("Error predicting user behaviour");
@@ -560,9 +555,6 @@ async function predictUserBehaviour(casts: Array<string>) {
         greatestCategory = category;
       }
     });
-
-    console.log("Greatest category:", greatestCategory);
-    console.log("Highest value:", highestValue);
 
     return {
       ok: true,

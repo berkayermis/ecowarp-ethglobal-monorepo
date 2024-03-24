@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import { getFrameMetadata } from "frog/next";
 import type { Metadata } from "next";
 import { Address } from "viem";
+import Image from "next/image";
 import Upload from "@/components/Upload";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,6 +44,12 @@ export default async function Page({
 
   return (
     <main className={styles.main}>
+      <div className={styles.navbar}>
+        <div className={styles.logo}>
+          <Image src="/EcoWarpLogo.png" alt="logo" width={70} height={70} />
+        </div>
+        <span className={styles.logoTest}>EcoWarp</span>
+      </div>
       <Upload
         name={searchParams.name}
         description={searchParams.description}
