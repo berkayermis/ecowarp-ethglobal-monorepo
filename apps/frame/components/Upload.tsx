@@ -30,12 +30,10 @@ const Upload = ({
   );
 
   useEffect(() => {
-    // Generate preview URL for the first file if files are selected
-    if (file && file[0]) {
+    if (typeof window !== "undefined" && file && file[0]) {
       const fileUrl = URL.createObjectURL(file[0]);
       setImagePreviewUrl(fileUrl);
 
-      // Cleanup function to revoke URL to avoid memory leaks
       return () => URL.revokeObjectURL(fileUrl);
     }
   }, [file]);
@@ -51,8 +49,12 @@ const Upload = ({
     }>,
   };
 
-  const handleAction = async (formData: FormData) => {
+  const handleAction = async () => {
     if (!file) return;
+
+    const formData = new FormData();
+    file.forEach((file) => formData.append("picture", file));
+
     const { ok } = await pinToIPFS(formData, metadata, code, wallet_address);
 
     if (ok) {
@@ -75,10 +77,7 @@ const Upload = ({
           style={{ width: "100%", maxHeight: "200px", objectFit: "contain" }}
         />
       )}
-      <form
-        className={styles.form}
-        action={(formData) => handleAction(formData)}
-      >
+      <form className={styles.form} action={() => handleAction()}>
         <Input
           type="file"
           multiple
