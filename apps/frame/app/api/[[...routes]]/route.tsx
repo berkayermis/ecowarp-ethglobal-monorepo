@@ -10,21 +10,33 @@ import {
   sign_up,
   cdn_req,
   fetchIPFSHash,
+  buyerAction,
 } from "@/actions";
-import { Address, parseEther, zeroAddress } from "viem";
+import { Address, formatEther, parseEther, zeroAddress } from "viem";
 import { extractParamsFromUrl, NumberFormatter } from "@/utils/formatter";
 import { generateSecureRandomString } from "@/utils/random";
-import { CONTRACT_ABI, CONTRACT_ADDRESS, IPFS_GATEWAY } from "@/constant";
+import {
+  CONSTANT_ETH_USD_PRICE,
+  CONTRACT_ABI,
+  CONTRACT_ADDRESS,
+  PINATA_IPFS_GATEWAY,
+} from "@/constant";
 
 type UserType = "Seller" | "Buyer" | undefined;
 
 type ProductType = {
   name: string;
   description: string;
-  unitPrice: string;
+  price: string;
   supply: string;
   category: string;
 };
+
+interface GraphProduct extends ProductType {
+  creator: Address;
+  tokenId: string;
+  uri: string;
+}
 
 type State = {
   UserType: UserType;
@@ -33,6 +45,11 @@ type State = {
   code: string | undefined;
   readyToFinish: boolean;
   product: ProductType;
+  products: Array<GraphProduct>;
+  activeProducts: Array<GraphProduct>;
+  totalPages: number;
+  currentPage: number;
+  currentImage: string;
 };
 
 const app = new Frog<{ State: State }>({
@@ -48,10 +65,14 @@ const app = new Frog<{ State: State }>({
     message: "",
     code: undefined,
     readyToFinish: false,
+    products: [],
+    totalPages: 0,
+    currentPage: 0,
+    currentImage: "",
     product: {
       name: "",
       description: "",
-      unitPrice: "",
+      price: "",
       supply: "",
       category: "",
     },
@@ -150,7 +171,7 @@ app.frame("/seller", async (c) => {
     });
   } else if (buttonValue === "continue_3" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
-      previousState.product.unitPrice = inputText;
+      previousState.product.price = inputText;
     });
   } else if (buttonValue === "continue_4" && buttonIndex === 2 && inputText) {
     state = await deriveState(async (previousState) => {
@@ -222,11 +243,11 @@ app.frame("/seller", async (c) => {
       ) : buttonValue === "continue" ? (
         <TextInput placeholder="Product Description" />
       ) : buttonValue === "continue_2" ? (
-        <TextInput placeholder="Unit Price (in terms of ETH)" />
+        <TextInput placeholder="Unit Price ($)" />
       ) : buttonValue === "continue_3" ? (
         <TextInput placeholder="Supply" />
       ) : buttonValue === "continue_4" ? (
-        <TextInput placeholder="Category (Art, Electronics, Books)" />
+        <TextInput placeholder="Category (art, electronics, books)" />
       ) : null,
       buttonValue === "seller" ? (
         <Button key="continue" value="continue">
@@ -250,7 +271,7 @@ app.frame("/seller", async (c) => {
         </Button>
       ) : (
         <Button.Redirect
-          location={`/?code=${state.code}&wallet_address=${state.address}&name=${encodeURIComponent(state.product.name)}&description=${encodeURIComponent(state.product.description)}&unitPrice=${encodeURIComponent(state.product.unitPrice)}&supply=${state.product.supply}&category=${state.product.category}`}
+          location={`/?code=${state.code}&wallet_address=${state.address}&name=${encodeURIComponent(state.product.name)}&description=${encodeURIComponent(state.product.description)}&unitPrice=${encodeURIComponent(state.product.price)}&supply=${state.product.supply}&category=${state.product.category}`}
         >
           {"Upload Image 🛍️"}
         </Button.Redirect>
@@ -279,8 +300,8 @@ app.transaction("/mint", async (c) => {
     to: CONTRACT_ADDRESS,
     args: [
       product.description,
-      IPFS_GATEWAY + hash,
-      product.unitPrice,
+      PINATA_IPFS_GATEWAY + hash,
+      parseEther(String(Number(product.price) / CONSTANT_ETH_USD_PRICE)),
       product.supply,
     ],
     value: parseEther("0.00001"), // @todo
@@ -290,14 +311,33 @@ app.transaction("/mint", async (c) => {
 app.frame("/buyer", async (c) => {
   const { buttonValue, deriveState, frameData } = c;
   console.log("hello buyer");
+  let state;
 
-  const state = await deriveState(async (previousState) => {
+  state = await deriveState(async (previousState) => {
     previousState.UserType = "Buyer";
     const { ok, user, unregistered_wallet_address } =
       await get_and_encode_wallet_address(frameData?.fid);
     if (ok) {
       previousState.address = user.wallet_address;
       previousState.message = "User found";
+      const { ok, products } = await buyerAction(frameData?.fid as number);
+      console.log("products: ", products);
+      previousState.products = products;
+      previousState.totalPages = products.length;
+      previousState.activeProducts = products.slice(
+        previousState.currentPage,
+        previousState.currentPage + 1
+      );
+      const url =
+        PINATA_IPFS_GATEWAY +
+        previousState.activeProducts[0]?.uri.split("ipfs://")[1];
+      const currentImage = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((res) => res.json());
+      previousState.currentImage = currentImage.image;
     } else {
       const { ok } = await sign_up(unregistered_wallet_address);
       if (ok) {
@@ -309,43 +349,77 @@ app.frame("/buyer", async (c) => {
     }
   });
 
+  console.log("totalPages", state.totalPages);
+
+  if (buttonValue === "next") {
+    state = await deriveState(async (previousState) => {
+      previousState.currentPage += 1;
+      previousState.activeProducts = previousState.products.slice(
+        previousState.currentPage,
+        previousState.currentPage + 1
+      );
+      const url =
+        PINATA_IPFS_GATEWAY +
+        previousState.activeProducts[0]?.uri.split("ipfs://")[1];
+      const currentImage = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((res) => res.json());
+      previousState.currentImage = currentImage.image;
+    });
+  } else if (buttonValue === "prev") {
+    state = await deriveState(async (previousState) => {
+      previousState.currentPage -= 1;
+      previousState.activeProducts = previousState.products.slice(
+        previousState.currentPage,
+        previousState.currentPage + 1
+      );
+      const url =
+        PINATA_IPFS_GATEWAY +
+        previousState.activeProducts[0]?.uri.split("ipfs://")[1];
+      const currentImage = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((res) => res.json());
+      previousState.currentImage = currentImage.image;
+    });
+  }
+
   return c.res({
-    image: (
-      <div
-        style={{
-          alignItems: "center",
-          background: "black",
-          backgroundSize: "100% 100%",
-          display: "flex",
-          flexDirection: "column",
-          flexWrap: "nowrap",
-          height: "100%",
-          justifyContent: "center",
-          textAlign: "center",
-          width: "100%",
-        }}
-      >
-        <div
-          style={{
-            color: "white",
-            fontSize: 35,
-            fontStyle: "normal",
-            letterSpacing: "-0.025em",
-            lineHeight: 1.4,
-            marginTop: 20,
-            padding: "0 300px",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {state.message ? state.message : "error"}
-        </div>
-      </div>
-    ),
+    image: `${state.currentImage}`,
     imageAspectRatio: "1:1",
     intents: [
-      <Button key="b" value="buyer">
-        Hey buyer!
-      </Button>,
+      state.currentPage === 0 ? (
+        <Button action="/" key="b-back" value="back">
+          👈
+        </Button>
+      ) : (
+        <Button key="prev" value="prev">
+          👈
+        </Button>
+      ),
+      ...state.activeProducts.map((product, index) => {
+        return (
+          <Button key={index} value={product.tokenId}>
+            Buy with{" "}
+            {NumberFormatter({
+              value: Number(formatEther(BigInt(product.price))),
+              decimalScale: 6,
+              thousandSeparator: true,
+              convertToUSD: true,
+            })}{" "}
+          </Button>
+        );
+      }),
+      state.currentPage + 1 < state.totalPages && (
+        <Button key="next" value="next">
+          👉
+        </Button>
+      ),
     ],
   });
 });
