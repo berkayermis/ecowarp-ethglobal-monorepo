@@ -273,7 +273,9 @@ app.transaction("/mint", async (c) => {
     functionName: "createListing",
     to: CONTRACT_ADDRESS,
     args: [
+      product.name,
       product.description,
+      product.category,
       PINATA_IPFS_GATEWAY + hash,
       parseEther(String(Number(product.price) / CONSTANT_ETH_USD_PRICE)),
       product.supply,
