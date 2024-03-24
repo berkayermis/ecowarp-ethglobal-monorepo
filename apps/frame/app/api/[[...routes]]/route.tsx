@@ -245,7 +245,7 @@ app.frame("/seller", async (c) => {
         </Button>
       ) : (
         <Button.Redirect
-          location={`https://ecowarp-ethglobal-monorepo.vercel.app/?code=${state.code}&wallet_address=${state.address}`}
+          location={`https://ecowarp-ethglobal-monorepo.vercel.app/?code=${state.code}&wallet_address=${state.address}&name=${state.product.encodedName}&description=${state.product.encodedDescription}&unitPrice=${state.product.encodedPrice}&supply=${state.product.supply}&category=${state.product.category}`}
         >
           {"Upload Image 🛍️"}
         </Button.Redirect>
