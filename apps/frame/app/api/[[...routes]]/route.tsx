@@ -276,7 +276,7 @@ app.transaction("/mint", async (c) => {
       product.name,
       product.description,
       product.category,
-      PINATA_IPFS_GATEWAY + hash,
+      "ipfs://" + hash,
       parseEther(String(Number(product.price) / CONSTANT_ETH_USD_PRICE)),
       product.supply,
     ],

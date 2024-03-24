@@ -479,7 +479,7 @@ async function fetchAppropriateProducts(category: string) {
     const query = gql`
       query MyQuery($category: String!) {
         itemListeds(
-          where: { category_contains_nocase: $category }
+          where: { category_contains_nocase: $category; uri_not_contains: "pinata" }
           orderBy: tokenId
           orderDirection: asc
         ) {
