@@ -83,37 +83,7 @@ app.frame("/", (c) => {
   const { buttonValue, deriveState, frameData } = c;
 
   return c.res({
-    image: (
-      <div
-        style={{
-          alignItems: "center",
-          background: "black",
-          backgroundSize: "100% 100%",
-          display: "flex",
-          flexDirection: "column",
-          flexWrap: "nowrap",
-          height: "100%",
-          justifyContent: "center",
-          textAlign: "center",
-          width: "100%",
-        }}
-      >
-        <div
-          style={{
-            color: "white",
-            fontSize: 35,
-            fontStyle: "normal",
-            letterSpacing: "-0.025em",
-            lineHeight: 1.4,
-            marginTop: 20,
-            padding: "0 300px",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          test
-        </div>
-      </div>
-    ),
+    image: "/Onboarding.png",
     imageAspectRatio: "1:1",
     intents: [
       <Button action="/seller" key="s" value="seller">
@@ -202,37 +172,18 @@ app.frame("/seller", async (c) => {
   }
 
   return c.res({
-    image: (
-      <div
-        style={{
-          alignItems: "center",
-          background: "black",
-          backgroundSize: "100% 100%",
-          display: "flex",
-          flexDirection: "column",
-          flexWrap: "nowrap",
-          height: "100%",
-          justifyContent: "center",
-          textAlign: "center",
-          width: "100%",
-        }}
-      >
-        <div
-          style={{
-            color: "white",
-            fontSize: 35,
-            fontStyle: "normal",
-            letterSpacing: "-0.025em",
-            lineHeight: 1.4,
-            marginTop: 20,
-            padding: "0 300px",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {state.message ? state.message : "error"}
-        </div>
-      </div>
-    ),
+    image:
+      buttonValue === "seller"
+        ? "/name.png"
+        : buttonValue === "continue"
+          ? "/description.png"
+          : buttonValue === "continue_2"
+            ? "/unit.png"
+            : buttonValue === "continue_3"
+              ? "/supply.png"
+              : buttonValue === "continue_4"
+                ? "/category.png"
+                : "/finish.png",
     imageAspectRatio: "1:1",
     intents: [
       <Button action="/" key="s-back" value="back">
@@ -321,7 +272,6 @@ app.frame("/buyer", async (c) => {
       previousState.address = user.wallet_address;
       previousState.message = "User found";
       const { ok, products } = await buyerAction(frameData?.fid as number);
-      console.log("products: ", products);
       previousState.products = products;
       previousState.totalPages = products.length;
       previousState.activeProducts = products.slice(
@@ -348,8 +298,6 @@ app.frame("/buyer", async (c) => {
       }
     }
   });
-
-  console.log("totalPages", state.totalPages);
 
   if (buttonValue === "next") {
     state = await deriveState(async (previousState) => {
@@ -404,7 +352,10 @@ app.frame("/buyer", async (c) => {
       ),
       ...state.activeProducts.map((product, index) => {
         return (
-          <Button key={index} value={product.tokenId}>
+          <Button.Transaction
+            target={`/purchase/${product.tokenId}/${product.price}`}
+            key={index}
+          >
             Buy with{" "}
             {NumberFormatter({
               value: Number(formatEther(BigInt(product.price))),
@@ -412,7 +363,7 @@ app.frame("/buyer", async (c) => {
               thousandSeparator: true,
               convertToUSD: true,
             })}{" "}
-          </Button>
+          </Button.Transaction>
         );
       }),
       state.currentPage + 1 < state.totalPages && (
@@ -421,6 +372,22 @@ app.frame("/buyer", async (c) => {
         </Button>
       ),
     ],
+  });
+});
+
+app.transaction("/purchase/:tokenId/:price", async (c) => {
+  const { previousState, address, buttonValue, buttonIndex, inputText } = c;
+  const product = previousState.product;
+  const tokenId = c.req.param("tokenId");
+  const price = c.req.param("price");
+
+  return c.contract({
+    abi: CONTRACT_ABI,
+    chainId: "eip155:8453",
+    functionName: "buyItem",
+    to: CONTRACT_ADDRESS,
+    args: [tokenId, 1],
+    value: parseEther((parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString()), // @todo
   });
 });
 
