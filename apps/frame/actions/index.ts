@@ -5,8 +5,13 @@ import { supabaseClient } from "@/utils/client";
 import {
   PINATA_USER_BY_ID_API_URL,
   PINATA_PINNING_API_URL,
+  PINATA_HUB_USER_CASTS_BY_FID_API_URL,
+  SUBGRAPH_API_URL,
   Json,
+  PINATA_IPFS_GATEWAY,
+  RAILWAY_ML_PREDICTION_API_URL,
 } from "@/constant";
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 
 export async function get_and_encode_wallet_address(fid: number | undefined) {
   try {
@@ -291,7 +296,9 @@ export async function pinToIPFS(
         ...(metadata as { [key: string]: any }),
         name: metadata?.name.replace(/&#39;/g, "'"),
         description: metadata.description.replace(/&#39;/g, "'"),
-        image: hashes,
+        external_url: "https://ecowarp.shop",
+        image: PINATA_IPFS_GATEWAY + hashes[0]?.hash,
+        images: hashes,
       };
 
       const metadataFile = new Blob([JSON.stringify(refactoredMetadata)], {
@@ -416,5 +423,196 @@ export async function fetchIPFSHash(wallet_address: Address) {
         console.error("Error closing client connection:", err);
       }
     }
+  }
+}
+
+async function fetchUserCasts(fid: number | undefined) {
+  if (!fid || typeof fid !== "number" || fid === 0) {
+    throw new Error("Invalid fid");
+  }
+
+  const casts: Array<string> = [];
+
+  try {
+    let nextPageToken: string = "";
+    do {
+      const url: string =
+        PINATA_HUB_USER_CASTS_BY_FID_API_URL +
+        fid.toString() +
+        (nextPageToken ? `?pageToken=${nextPageToken}` : "");
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.PINATA_API_JWT}`,
+        },
+      }).then((res) => res.json());
+
+      if (response.error) {
+        console.log("response error", response.error);
+        throw new Error("Error fetching user data");
+      }
+
+      response.messages.forEach((message: any) => {
+        if (message.data.castAddBody) {
+          casts.push(message.data.castAddBody.text);
+        }
+      });
+
+      nextPageToken = response.nextPageToken as string;
+    } while (nextPageToken);
+
+    return {
+      ok: true,
+      casts,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      ok: false,
+      casts: null,
+    };
+  }
+}
+
+async function fetchAppropriateProducts(category: string) {
+  try {
+    const query = gql`
+      query MyQuery($category: String!) {
+        itemListeds(
+          where: { category_contains_nocase: $category }
+          orderBy: tokenId
+          orderDirection: asc
+        ) {
+          name
+          price
+          supply
+          tokenId
+          uri
+          category
+          creator
+        }
+      }
+    `;
+
+    const client = new ApolloClient({
+      uri: SUBGRAPH_API_URL,
+      cache: new InMemoryCache(),
+    });
+
+    const res = await client.query({
+      query: query,
+      variables: { category },
+    });
+
+    console.log("Response:", res);
+
+    const products = res.data.itemListeds;
+
+    if (products.length === 0) {
+      throw new Error("No products found");
+    }
+
+    return {
+      ok: true,
+      products,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      ok: false,
+      products: null,
+    };
+  }
+}
+
+async function predictUserBehaviour(casts: Array<string>) {
+  if (!casts || casts.length === 0) {
+    throw new Error("Invalid casts");
+  }
+
+  try {
+    const castsCleaned = casts.map((cast) =>
+      cast.replace(/(\r\n|\n|\r)/gm, "")
+    );
+    console.log("Casts cleaned:", castsCleaned);
+
+    const predictRes = await fetch(RAILWAY_ML_PREDICTION_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ casts: castsCleaned }),
+    }).then((res) => res.json());
+
+    console.log("Prediction response:", predictRes);
+
+    if (predictRes.statusCode !== 200) {
+      throw new Error("Error predicting user behaviour");
+    }
+
+    let greatestCategory = "";
+    let highestValue: number = 0;
+
+    Object.entries(predictRes.body).forEach(([category, value]) => {
+      const val = value as number;
+      if (val > highestValue) {
+        highestValue = val;
+        greatestCategory = category;
+      }
+    });
+
+    console.log("Greatest category:", greatestCategory);
+    console.log("Highest value:", highestValue);
+
+    return {
+      ok: true,
+      category: greatestCategory,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      ok: false,
+      category: null,
+    };
+  }
+}
+
+export async function buyerAction(fid: number) {
+  try {
+    const { ok: castOk, casts } = await fetchUserCasts(fid);
+
+    if (!castOk || !casts) {
+      throw new Error("Error fetching user casts");
+    }
+
+    console.log("casts", casts);
+
+    const { ok, category } = await predictUserBehaviour(casts);
+
+    if (!ok || !category) {
+      throw new Error("Error predicting user behaviour");
+    }
+
+    console.log("category", category);
+
+    const { ok: productOk, products } =
+      await fetchAppropriateProducts(category);
+
+    if (!productOk || !products) {
+      throw new Error("Error fetching products");
+    }
+
+    console.log("products", products);
+
+    return {
+      ok: true,
+      products,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      ok: false,
+      products: null,
+    };
   }
 }
