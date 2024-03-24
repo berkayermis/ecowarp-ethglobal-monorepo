@@ -58,6 +58,7 @@ const app = new Frog<{ State: State }>({
   basePath: "/api",
   hub: pinata(),
   browserLocation: "/:path",
+  verify: false,
   //secret: process.env.FROG_SECRET, // @todo
   initialState: {
     UserType: undefined,
@@ -97,14 +98,27 @@ app.frame("/", (c) => {
 });
 
 app.frame("/seller", async (c) => {
-  const { buttonValue, deriveState, frameData, buttonIndex, inputText } = c;
+  const {
+    buttonValue,
+    deriveState,
+    frameData,
+    buttonIndex,
+    inputText,
+    verified,
+  } = c;
+
+  if (!verified) {
+    console.log(`User not verified ${frameData?.fid}`);
+  }
+
   console.log(
     "hello seller",
     buttonValue,
     " inputText: ",
     inputText,
     " buttonIndex: ",
-    buttonIndex
+    buttonIndex,
+    frameData?.fid
   );
   let state;
 
@@ -260,8 +274,11 @@ app.transaction("/mint", async (c) => {
 });
 
 app.frame("/buyer", async (c) => {
-  const { buttonValue, deriveState, frameData } = c;
+  const { buttonValue, deriveState, frameData, verified } = c;
   console.log("hello buyer");
+  if (!verified) {
+    console.log(`User not verified ${frameData?.fid}`);
+  }
   let state;
 
   state = await deriveState(async (previousState) => {
