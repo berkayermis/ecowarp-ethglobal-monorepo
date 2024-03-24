@@ -212,7 +212,7 @@ app.frame("/seller", async (c) => {
       ) : buttonValue === "continue_3" ? (
         <TextInput placeholder="Supply" />
       ) : buttonValue === "continue_4" ? (
-        <TextInput placeholder="Category (art, electronics, books)" />
+        <TextInput placeholder="Category (art, books etc.)" />
       ) : null,
       buttonValue === "seller" ? (
         <Button key="continue" value="continue">
