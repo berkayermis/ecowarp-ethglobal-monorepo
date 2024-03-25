@@ -580,15 +580,11 @@ export async function buyerAction(fid: number) {
       throw new Error("Error fetching user casts");
     }
 
-    console.log("casts", casts);
-
     const { ok, category } = await predictUserBehaviour(casts);
 
     if (!ok || !category) {
       throw new Error("Error predicting user behaviour");
     }
-
-    console.log("category", category);
 
     const { ok: productOk, products } =
       await fetchAppropriateProducts(category);
@@ -596,8 +592,6 @@ export async function buyerAction(fid: number) {
     if (!productOk || !products) {
       throw new Error("Error fetching products");
     }
-
-    console.log("products", products);
 
     return {
       ok: true,

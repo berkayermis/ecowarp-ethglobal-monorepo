@@ -126,16 +126,6 @@ app.frame("/seller", async (c) => {
   if (!verified) {
     console.log(`User not verified ${frameData?.fid}`);
   }
-
-  console.log(
-    "hello seller",
-    buttonValue,
-    " inputText: ",
-    inputText,
-    " buttonIndex: ",
-    buttonIndex,
-    frameData?.fid
-  );
   let state;
 
   state = await deriveState(async (previousState) => {
@@ -310,7 +300,6 @@ app.transaction("/mint", async (c) => {
 
 app.frame("/buyer", async (c) => {
   const { buttonValue, deriveState, frameData, verified } = c;
-  console.log("hello buyer");
   if (!verified) {
     console.log(`User not verified ${frameData?.fid}`);
   }
@@ -430,19 +419,6 @@ app.frame("/buyer", async (c) => {
 app.transaction("/purchase/:tokenId/:price", async (c) => {
   const tokenId = c.req.param("tokenId");
   const price = c.req.param("price");
-  console.log("t-0", tokenId, price);
-  console.log(
-    "t-1",
-    parseEther((parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString())
-  );
-  console.log(
-    "t-2",
-    parseEther(
-      parseFloat(
-        (parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString()
-      ).toString()
-    )
-  );
 
   return c.contract({
     abi: CONTRACT_ABI,
@@ -450,7 +426,7 @@ app.transaction("/purchase/:tokenId/:price", async (c) => {
     functionName: "buyItem",
     to: CONTRACT_ADDRESS,
     args: [tokenId, 1],
-    value: parseEther((parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString()), // @todo
+    value: BigInt(price),
   });
 });
 
