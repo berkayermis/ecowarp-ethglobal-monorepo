@@ -34,6 +34,7 @@ type ProductType = {
   encodedPrice: string;
   supply: string;
   category: string;
+  inputError: boolean;
 };
 
 interface GraphProduct extends ProductType {
@@ -82,12 +83,21 @@ const app = new Frog<{ State: State }>({
       encodedPrice: "",
       supply: "",
       category: "",
+      inputError: false,
     },
   },
 });
 
-app.frame("/", (c) => {
-  const { buttonValue, deriveState, frameData } = c;
+app.frame("/", async (c) => {
+  const { buttonValue, deriveState, frameData, buttonIndex } = c;
+
+  if (buttonValue === "back" && buttonIndex === 1) {
+    await deriveState(async (previousState) => {
+      previousState.code = undefined;
+      previousState.readyToFinish = false;
+      previousState.product.inputError = false;
+    });
+  }
 
   return c.res({
     image: "/Onboarding.png",
@@ -146,57 +156,67 @@ app.frame("/seller", async (c) => {
     }
   });
 
-  if (buttonValue === "seller" && buttonIndex === 1) {
-    const code = await generateSecureRandomString(32);
-    state = await deriveState(async (previousState) => {
-      previousState.code = code;
-    });
-  } else if (buttonValue === "continue" && buttonIndex === 2 && inputText) {
-    state = await deriveState(async (previousState) => {
-      previousState.product.name = inputText;
-      previousState.product.encodedName = encodeURIComponent(inputText);
-    });
-  } else if (buttonValue === "continue_2" && buttonIndex === 2 && inputText) {
-    state = await deriveState(async (previousState) => {
-      previousState.product.description = inputText;
-      previousState.product.encodedDescription = encodeURIComponent(inputText);
-    });
-  } else if (buttonValue === "continue_3" && buttonIndex === 2 && inputText) {
-    state = await deriveState(async (previousState) => {
-      previousState.product.price = inputText;
-      previousState.product.encodedPrice = encodeURIComponent(inputText);
-    });
-  } else if (buttonValue === "continue_4" && buttonIndex === 2 && inputText) {
-    state = await deriveState(async (previousState) => {
-      previousState.product.supply = inputText;
-    });
-  } else if (buttonValue === "continue_5" && buttonIndex === 2 && inputText) {
-    state = await deriveState(async (previousState) => {
-      previousState.product.category = inputText;
-      previousState.readyToFinish = true;
-    });
+  if (inputText) {
+    if (buttonValue === "continue" && buttonIndex === 2) {
+      state = await deriveState(async (previousState) => {
+        previousState.product.name = inputText;
+        previousState.product.encodedName = encodeURIComponent(inputText);
+      });
+    } else if (buttonValue === "continue_2" && buttonIndex === 2) {
+      state = await deriveState(async (previousState) => {
+        previousState.product.description = inputText;
+        previousState.product.encodedDescription =
+          encodeURIComponent(inputText);
+      });
+    } else if (buttonValue === "continue_3" && buttonIndex === 2) {
+      state = await deriveState(async (previousState) => {
+        previousState.product.price = inputText;
+        previousState.product.encodedPrice = encodeURIComponent(inputText);
+      });
+    } else if (buttonValue === "continue_4" && buttonIndex === 2) {
+      state = await deriveState(async (previousState) => {
+        previousState.product.supply = inputText;
+      });
+    } else if (buttonValue === "continue_5" && buttonIndex === 2) {
+      state = await deriveState(async (previousState) => {
+        previousState.product.category = inputText;
+        previousState.readyToFinish = true;
+      });
+    }
   } else {
-    const { extractedCode, wallet_address } = await extractParamsFromUrl(
-      buttonValue as string
-    );
-    if (
-      extractedCode !== null &&
-      extractedCode === state.code &&
-      wallet_address !== null &&
-      wallet_address === state.address
-    ) {
-      const { ok } = await cdn_req(wallet_address, extractedCode);
-      if (ok) {
-        console.log("ok");
-      } else {
-        console.log("not ok");
+    if (buttonValue === "seller" && buttonIndex === 1) {
+      const code = await generateSecureRandomString(32);
+      state = await deriveState(async (previousState) => {
+        previousState.code = code;
+      });
+    } else if (buttonValue?.includes("ecowarp.store") && buttonIndex === 2) {
+      const { extractedCode, wallet_address } = await extractParamsFromUrl(
+        buttonValue as string
+      );
+      if (
+        extractedCode !== null &&
+        extractedCode === state.code &&
+        wallet_address !== null &&
+        wallet_address === state.address
+      ) {
+        const { ok } = await cdn_req(wallet_address, extractedCode);
+        if (ok) {
+          console.log("ok");
+        } else {
+          console.log("not ok");
+        }
       }
+    } else {
+      state = await deriveState(async (previousState) => {
+        previousState.product.inputError = true;
+      });
     }
   }
 
   return c.res({
-    image:
-      buttonValue === "seller"
+    image: state.product.inputError
+      ? "/400.png"
+      : buttonValue === "seller"
         ? "/name.png"
         : buttonValue === "continue"
           ? "/description.png"
@@ -212,44 +232,48 @@ app.frame("/seller", async (c) => {
       <Button action="/" key="s-back" value="back">
         👈
       </Button>,
-      buttonValue === "seller" ? (
-        <TextInput placeholder="Product Name" />
-      ) : buttonValue === "continue" ? (
-        <TextInput placeholder="Product Description" />
-      ) : buttonValue === "continue_2" ? (
-        <TextInput placeholder="Unit Price ($)" />
-      ) : buttonValue === "continue_3" ? (
-        <TextInput placeholder="Supply" />
-      ) : buttonValue === "continue_4" ? (
-        <TextInput placeholder="Category (art, books etc.)" />
+      !state.product.inputError ? (
+        buttonValue === "seller" ? (
+          <TextInput placeholder="Product Name" />
+        ) : buttonValue === "continue" ? (
+          <TextInput placeholder="Product Description" />
+        ) : buttonValue === "continue_2" ? (
+          <TextInput placeholder="Unit Price ($)" />
+        ) : buttonValue === "continue_3" ? (
+          <TextInput placeholder="Supply" />
+        ) : buttonValue === "continue_4" ? (
+          <TextInput placeholder="Category (art, books etc.)" />
+        ) : null
       ) : null,
-      buttonValue === "seller" ? (
-        <Button key="continue" value="continue">
-          Enter Product Description
-        </Button>
-      ) : buttonValue === "continue" ? (
-        <Button key="continue_2" value="continue_2">
-          Enter Unit Price
-        </Button>
-      ) : buttonValue === "continue_2" ? (
-        <Button key="continue_3" value="continue_3">
-          Enter Supply
-        </Button>
-      ) : buttonValue === "continue_3" ? (
-        <Button key="continue_4" value="continue_4">
-          Select Category
-        </Button>
-      ) : buttonValue === "continue_4" ? (
-        <Button key="continue_5" value="continue_5">
-          Continue
-        </Button>
-      ) : (
-        <Button.Redirect
-          location={`https://ecowarp.store/?code=${state.code}&wallet_address=${state.address}&name=${state.product.encodedName}&description=${state.product.encodedDescription}&unitPrice=${state.product.encodedPrice}&supply=${state.product.supply}&category=${state.product.category}`}
-        >
-          {"Upload Image 🛍️"}
-        </Button.Redirect>
-      ),
+      !state.product.inputError ? (
+        buttonValue === "seller" ? (
+          <Button key="continue" value="continue">
+            Enter Product Description
+          </Button>
+        ) : buttonValue === "continue" ? (
+          <Button key="continue_2" value="continue_2">
+            Enter Unit Price
+          </Button>
+        ) : buttonValue === "continue_2" ? (
+          <Button key="continue_3" value="continue_3">
+            Enter Supply
+          </Button>
+        ) : buttonValue === "continue_3" ? (
+          <Button key="continue_4" value="continue_4">
+            Select Category
+          </Button>
+        ) : buttonValue === "continue_4" ? (
+          <Button key="continue_5" value="continue_5">
+            Continue
+          </Button>
+        ) : (
+          <Button.Redirect
+            location={`https://ecowarp.store/?code=${state.code}&wallet_address=${state.address}&name=${state.product.encodedName}&description=${state.product.encodedDescription}&unitPrice=${state.product.encodedPrice}&supply=${state.product.supply}&category=${state.product.category}`}
+          >
+            {"Upload Image 🛍️"}
+          </Button.Redirect>
+        )
+      ) : null,
       state.readyToFinish && (
         <Button.Transaction target="/mint">Mint</Button.Transaction>
       ),
@@ -404,8 +428,6 @@ app.frame("/buyer", async (c) => {
 });
 
 app.transaction("/purchase/:tokenId/:price", async (c) => {
-  const { previousState, address, buttonValue, buttonIndex, inputText } = c;
-  const product = previousState.product;
   const tokenId = c.req.param("tokenId");
   const price = c.req.param("price");
   console.log("t-0", tokenId, price);
