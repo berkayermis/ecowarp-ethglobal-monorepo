@@ -408,6 +408,19 @@ app.transaction("/purchase/:tokenId/:price", async (c) => {
   const product = previousState.product;
   const tokenId = c.req.param("tokenId");
   const price = c.req.param("price");
+  console.log("t-0", tokenId, price);
+  console.log(
+    "t-1",
+    parseEther((parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString())
+  );
+  console.log(
+    "t-2",
+    parseEther(
+      parseFloat(
+        (parseFloat(price) / CONSTANT_ETH_USD_PRICE).toString()
+      ).toString()
+    )
+  );
 
   return c.contract({
     abi: CONTRACT_ABI,
